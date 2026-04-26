@@ -8,3 +8,4 @@ compile_commands.json
 *.gif
 *.png
 !ref_*
+profiling/data
