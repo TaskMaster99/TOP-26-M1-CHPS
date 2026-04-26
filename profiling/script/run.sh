@@ -2,8 +2,9 @@
 
 sudo sh -c 'echo -1 > /proc/sys/kernel/perf_event_paranoid'
 
-mode=("STAT" "RECORD" "REPORT")
+mode=("STAT" "RECORD" "REPORT" "HOTSPOT")
 size=$2
+
 
 if [[ ${mode[0]} == ${1} ]]
 then
@@ -25,8 +26,12 @@ then
     mpirun -np ${size} ./build/top.lbm-exe config.txt
 elif [[ ${mode[1]} == ${1} ]]
 then
+    rm -r profiling/data/perf*
     mkdir -p $(pwd)/profiling/data
     mpirun -np ${size} "$(pwd)/profiling/script/sample.sh"
-else
+elif [[ ${mode[2]} == ${1} ]]
+then
     perf report -i "$(pwd)/profiling/data/perf.${2}.data"
+else
+    sudo ./profiling/bin/hotspot.AppImage "$(pwd)/profiling/data/perf.${2}.data"
 fi
