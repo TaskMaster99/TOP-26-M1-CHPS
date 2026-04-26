@@ -143,6 +143,12 @@ uv run python -m lbm_viz --generate-gif results.raw test.gif
 
 **Profile**
 
+Make sure to download hotspot AppImage and put it in
+
+```bash
+profiling/bin
+```
+
 To profile, for instance record with 8 processus
 
 ```bash
