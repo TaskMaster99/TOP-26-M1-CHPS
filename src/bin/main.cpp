@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
   const double start_time = MPI_Wtime();
   for (ssize_t i = 1; i <= ITERATIONS; i++) {
     if (rank == RANK_MASTER) {
-      fprintf(stderr, "\rStep: %6d/%6d", i, ITERATIONS);
+      fprintf(stderr, "\rStep: %6d/%6d", (int)i, ITERATIONS);
     }
     // Compute special actions (border, obstacle...)
     special_cells(&mesh, &mesh_type, &mesh_comm);

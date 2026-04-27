@@ -20,13 +20,13 @@ double get_vect_norm_2(const Vector a, const Vector b);
 /// @brief Computes the macroscopic density of the cell by summing its `DIRECTIONS` microscopic densities.
 /// @param Cell to compute the density of.
 /// @return Macroscopic density of the cell.
-double get_cell_density(const lbm_mesh_cell_t cell);
+double get_cell_density(const Mesh* mesh, int x, int y);
 
 /// @brief Computes the macroscopic velocity of the cell by summing its `DIRECTIONS` microscopic velocities.
 /// @param Cell to compute the velocity of.
 /// @param cell_density Macroscopic density of the cell.
 /// @return Macroscopic velocity of the cell.
-void get_cell_velocity(Vector v, const lbm_mesh_cell_t cell, double cell_density);
+void get_cell_velocity(Vector v, const Mesh* mesh, int x, int y, double cell_density);
 
 /// @brief Provides the velocity of Poiseuille for a given position considering a tube of given size.
 /// @param i Position in which we search the velocity.
@@ -51,7 +51,7 @@ double compute_equilibrium_profile(Vector velocity, double density, int directio
 /// @brief Computes the collision vector between fluids in every direction.
 /// @param cell_out Cell after collision.
 /// @param cell_in Cell before collision.
-void compute_cell_collision(lbm_mesh_cell_t cell_out, const lbm_mesh_cell_t cell_in);
+void compute_cell_collision(Mesh* mesh_out, const Mesh* mesh_in, int x, int y);
 
 /** ------------------------------------------------------------------------ **
  * Limit conditions                                                           *
@@ -59,7 +59,7 @@ void compute_cell_collision(lbm_mesh_cell_t cell_out, const lbm_mesh_cell_t cell
 
 /// @brief Applies a reflexion on the different directions to simulate the presence of a solid body.
 /// @param The cell to compute the bounce back on.
-void compute_bounce_back(lbm_mesh_cell_t cell);
+void compute_bounce_back(Mesh* mesh, int x, int y);
 
 /// @brief Applies the Zou/He method to simulate a fluid entering the domain from left to right on a vertical border.
 ///
@@ -68,14 +68,14 @@ void compute_bounce_back(lbm_mesh_cell_t cell);
 /// @param mesh The given mesh (mainly for the height).
 /// @param cell Mesh to update.
 /// @param id_y Y position of the cell in order to know how to compute Poiseuille velocity.
-void compute_inflow_zou_he_poiseuille_distr(const Mesh* mesh, lbm_mesh_cell_t cell, size_t id_y);
+void compute_inflow_zou_he_poiseuille_distr(const Mesh* mesh_in, Mesh* mesh_out, int x, int y, size_t id_y);
 
 /// @brief Applies the Zou/He method to simulate a fluid leaving the domain from left to right on a vertical border.
 ///
 /// The condition applied to build the equation is the the maintaining of a gradiant of null density at the border.
 ///
 /// @param cell Mesh to update.
-void compute_outflow_zou_he_const_density(lbm_mesh_cell_t mesh);
+void compute_outflow_zou_he_const_density(Mesh* mesh, int x, int y);
 
 /** ------------------------------------------------------------------------ **
  * Main functions                                                             *

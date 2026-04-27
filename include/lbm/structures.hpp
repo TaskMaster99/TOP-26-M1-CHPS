@@ -6,8 +6,6 @@
 #include <lbm/config.hpp>
 #include <lbm/tpl.hpp>
 
-/// @brief A cell is an array of double `DIRECTIONS` to store microscopic / probabilities (`f_i`).
-typedef double* lbm_mesh_cell_t;
 
 /// @brief Representation of a vector to manipulate macroscopic velocities.
 typedef double Vector[DIMENSIONS];
@@ -16,7 +14,8 @@ typedef double Vector[DIMENSIONS];
 /// This mesh contains a border for * phantom meshes of a cell.
 typedef struct Mesh {
   /// Cells of a mesh of dimension `MESH_WIDTH` * `MESH_HEIGHT`.
-  lbm_mesh_cell_t cells;
+  // Taille totale : width * height * DIRECTIONS
+  double* cells;
   /// Width of the local mesh (phantom meshes included).
   uint32_t width;
   /// Height of the local mesh (phantom meshes included).
@@ -97,18 +96,20 @@ void save_frame(FILE* fp, const Mesh* mesh);
 /// @brief Prints a fatal error message.
 void fatal(const char* message);
 
-/// @brief Retrieves a cell of a mesh given its coordinates.
-static inline lbm_mesh_cell_t Mesh_get_cell(const Mesh* mesh, int x, int y) {
-  return &mesh->cells[(x * mesh->height + y) * DIRECTIONS];
+///@brief Retrieves a reference to the density k of a cell given its coordinates
+static inline double& Mesh_get_cell(Mesh* mesh, int x, int y, int k) {
+  // Indexation SoA + Row-Major : Direction -> Y -> X
+  return mesh->cells[k * (mesh->width * mesh->height) + (y * mesh->width + x)];
 }
 
-/// @brief Retrieves a column of a mesh given the `x` coordinate.
-static inline lbm_mesh_cell_t Mesh_get_col(const Mesh* mesh, int x) {
-  // `+ DIRECTIONS` to skip the first (phantom) line
-  return &mesh->cells[x * mesh->height * DIRECTIONS + DIRECTIONS];
+/// @brief Read-only variant for const meshes
+static inline const double& Mesh_get_cell_const(const Mesh* mesh, int x, int y, int k) {
+  return mesh->cells[k * (mesh->width * mesh->height) + (y * mesh->width + x)];
 }
 
 /// @brief Retrieves a pointer on the cell type of a mesh given its coordinates.
 static inline lbm_cell_type_t* lbm_cell_type_t_get_cell(const lbm_mesh_type_t* meshtype, uint32_t x, uint32_t y) {
-  return &meshtype->types[x * meshtype->height + y];
+  // Le tableau des types reste en scalaire 2D classique (Row-Major)
+  return &meshtype->types[y * meshtype->width + x]; 
 }
+

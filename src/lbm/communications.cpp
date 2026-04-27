@@ -20,30 +20,26 @@
 /// @param fp File descriptor to write to.
 /// @param mesh Domain to save.
 void save_frame(FILE* fp, const Mesh* mesh) {
-  // Write buffer to write float instead of double
   lbm_file_entry_t buffer[WRITE_BUFFER_ENTRIES];
-  // Loop on all values
   size_t cnt = 0;
   for (size_t i = 1; i < mesh->width - 1; i++) {
     for (size_t j = 1; j < mesh->height - 1; j++) {
-      // Compute macroscopic values
-      const double density = get_cell_density(Mesh_get_cell(mesh, i, j));
+      //On passe le maillage et les coordonnées je vais t'expliquer la physique ce soir 
+      const double density = get_cell_density(mesh, i, j);
       Vector v;
-      get_cell_velocity(v, Mesh_get_cell(mesh, i, j), density);
+      get_cell_velocity(v, mesh, i, j, density);
       const double norm = std::sqrt(get_vect_norm_2(v, v));
-      // Fill buffer
+      
       buffer[cnt].rho = density;
       buffer[cnt].v   = norm;
       cnt++;
       assert(cnt <= WRITE_BUFFER_ENTRIES);
-      // Flush buffer if full
       if (cnt == WRITE_BUFFER_ENTRIES) {
         fwrite(buffer, sizeof(lbm_file_entry_t), cnt, fp);
         cnt = 0;
       }
     }
   }
-  // Final flush
   if (cnt != 0) {
     fwrite(buffer, sizeof(lbm_file_entry_t), cnt, fp);
   }
@@ -187,21 +183,28 @@ static void lbm_comm_sync_ghosts_horizontal(
   int target_rank,
   uint32_t x
 ) {
-  // If target is -1, no comm
-  if (target_rank == -1) {
-    return;
-  }
+  if (target_rank == -1) return;
 
   MPI_Status status;
+  double buf[DIRECTIONS]; // Buffer d'emballage temporaire
+
   switch (comm_type) {
   case COMM_SEND:
     for (size_t y = 0; y < mesh->height - 2; y++) {
-      MPI_Send(&Mesh_get_col(mesh_to_process, x)[y], DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
+      // mpaquetage SoA vers Buffer local
+      for (size_t k = 0; k < DIRECTIONS; k++) {
+        buf[k] = Mesh_get_cell(mesh_to_process, x, y, k);
+      }
+      MPI_Send(buf, DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
     }
     break;
   case COMM_RECV:
     for (size_t y = 0; y < mesh->height - 2; y++) {
-      MPI_Recv(&Mesh_get_col(mesh_to_process, x)[y], DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD, &status);
+      MPI_Recv(buf, DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD, &status);
+      // depaquetage Buffer local vers SoA
+      for (size_t k = 0; k < DIRECTIONS; k++) {
+        Mesh_get_cell(mesh_to_process, x, y, k) = buf[k];
+      }
     }
     break;
   default:
@@ -222,18 +225,23 @@ static void lbm_comm_sync_ghosts_diagonal(
   uint32_t x,
   uint32_t y
 ) {
-  // If target is -1, no comm
-  if (target_rank == -1) {
-    return;
-  }
+  if (target_rank == -1) return;
 
   MPI_Status status;
+  double buf[DIRECTIONS];
+
   switch (comm_type) {
   case COMM_SEND:
-    MPI_Send(Mesh_get_cell(mesh_to_process, x, y), DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
+    for (size_t k = 0; k < DIRECTIONS; k++) {
+      buf[k] = Mesh_get_cell(mesh_to_process, x, y, k);
+    }
+    MPI_Send(buf, DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
     break;
   case COMM_RECV:
-    MPI_Recv(Mesh_get_cell(mesh_to_process, x, y), DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD, &status);
+    MPI_Recv(buf, DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD, &status);
+    for (size_t k = 0; k < DIRECTIONS; k++) {
+      Mesh_get_cell(mesh_to_process, x, y, k) = buf[k];
+    }
     break;
   default:
     fatal("unknown type of communication");
@@ -245,34 +253,23 @@ static void lbm_comm_sync_ghosts_diagonal(
 /// @param mesh_to_process Mesh to use when exchanging phantom meshes.
 /// @param target_rank Rank to communicate with.
 /// @param y Y coordinate to use.
-static void
-lbm_comm_sync_ghosts_vertical(Mesh* mesh_to_process, lbm_comm_type_t comm_type, int target_rank, uint32_t y) {
-  // if target is -1, no comm
-  if (target_rank == -1) {
-    return;
-  }
+static void lbm_comm_sync_ghosts_vertical(Mesh* mesh_to_process, lbm_comm_type_t comm_type, int target_rank, uint32_t y) {
+  if (target_rank == -1) return;
 
   MPI_Status status;
   switch (comm_type) {
   case COMM_SEND:
     for (size_t x = 1; x < mesh_to_process->width - 2; x++) {
       for (size_t k = 0; k < DIRECTIONS; k++) {
-        MPI_Send(&Mesh_get_cell(mesh_to_process, x, y)[k], 1, MPI_DOUBLE, target_rank, k, MPI_COMM_WORLD);
+        MPI_Send(&Mesh_get_cell(mesh_to_process, x, y, k), 1, MPI_DOUBLE, target_rank, k, MPI_COMM_WORLD);
       }
     }
     break;
   case COMM_RECV:
     for (size_t x = 1; x < mesh_to_process->width - 2; x++) {
       for (size_t k = 0; k < DIRECTIONS; k++) {
-        MPI_Recv(
-          &Mesh_get_cell(mesh_to_process, x, y)[k],
-          DIRECTIONS,
-          MPI_DOUBLE,
-          target_rank,
-          k,
-          MPI_COMM_WORLD,
-          &status
-        );
+        // On reçoit 1 double, pas DIRECTIONS
+        MPI_Recv(&Mesh_get_cell(mesh_to_process, x, y, k), 1, MPI_DOUBLE, target_rank, k, MPI_COMM_WORLD, &status);
       }
     }
     break;
