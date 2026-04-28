@@ -111,9 +111,13 @@ int main(int argc, char* argv[]) {
   if (rank == RANK_MASTER) {
     putc('\n', stdout);
   }
+  size_t nb_req = (temp.width - 3);
 
+  MPI_Status* status = (MPI_Status*)malloc(nb_req * sizeof(MPI_Status));
+  MPI_Request* req   = (MPI_Request*)malloc(nb_req * sizeof(MPI_Request));
   // Time steps
   const double start_time = MPI_Wtime();
+
   for (ssize_t i = 1; i <= ITERATIONS; i++) {
     if (rank == RANK_MASTER) {
       fprintf(stderr, "\rStep: %6d/%6d", (int)i, ITERATIONS);
@@ -121,18 +125,20 @@ int main(int argc, char* argv[]) {
     // Compute special actions (border, obstacle...)
     special_cells(&mesh, &mesh_type, &mesh_comm);
     // Need to wait all before doing next step
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     // Compute collision term
     collision(&temp, &mesh);
     // Need to wait all before doing next step
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     // Propagate values from node to neighboors
-    lbm_comm_halo_exchange(&mesh_comm, &temp);
+    // lbm_comm_halo_exchange(&mesh_comm, &temp);
+    lbm_comm_halo_exchange_non_block(&mesh_comm, &temp);
+
     propagation(&mesh, &temp);
     // Need to wait all before doing next step
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     // Save step
     if (i % WRITE_STEP_INTERVAL == 0 && lbm_gbl_config.output_filename != NULL) {
@@ -160,6 +166,8 @@ int main(int argc, char* argv[]) {
   Mesh_release(&temp_render);
   lbm_mesh_type_t_release(&mesh_type);
 
+  free(status);
+  free(req);
   // Close MPI
   MPI_Finalize();
 

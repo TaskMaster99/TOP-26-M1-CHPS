@@ -38,7 +38,7 @@ const int opposite_of[DIRECTIONS] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
 #error Need to define adapted equilibrium distribution function
 #endif
 
-double get_vect_norm_2(Vector const a, Vector const b) {
+double get_vect_norm_2(const Vector a, const Vector b) {
   double res = 0.0;
   for (size_t k = 0; k < DIMENSIONS; k++) {
     res += a[k] * b[k];
@@ -156,7 +156,7 @@ void compute_outflow_zou_he_const_density(Mesh* mesh, int x, int y) {
 #error Implemented only for 9 directions
 #endif
 
-  double const rho = 1.0;
+  const double rho = 1.0;
   // Compute macroscopic velocity depending on inner flow going onto the wall
   const double v = -1.0 + (1.0 / rho) * (Mesh_get_cell(mesh, x, y, 0) + Mesh_get_cell(mesh, x, y, 2) + Mesh_get_cell(mesh, x, y, 4) + 2 * (Mesh_get_cell(mesh, x, y, 1) + Mesh_get_cell(mesh, x, y, 5) + Mesh_get_cell(mesh, x, y, 8)));
 
@@ -197,7 +197,8 @@ void collision(Mesh* mesh_out, const Mesh* mesh_in) {
   assert(mesh_in->width == mesh_out->width);
   assert(mesh_in->height == mesh_out->height);
 
-  // Loop on all inner cells
+// Loop on all inner cells
+#pragma omp parallel for schedule(dynamic)
   for (size_t j = 1; j < mesh_in->height - 1; j++) {
     for (size_t i = 1; i < mesh_in->width - 1; i++) {
       compute_cell_collision(mesh_out, mesh_in, i, j);
@@ -206,14 +207,15 @@ void collision(Mesh* mesh_out, const Mesh* mesh_in) {
 }
 
 void propagation(Mesh* mesh_out, const Mesh* mesh_in) {
-  // Loop on all cells
-  for (size_t j = 0; j < mesh_out->height; j++) {
-    for (size_t i = 0; i < mesh_out->width; i++) {
+// Loop on all cells
+#pragma omp parallel for schedule(dynamic)
+  for (size_t j = 1; j < mesh_out->height - 1; j++) {
+    for (size_t i = 1; i < mesh_out->width - 1; i++) {
       // For all direction
       for (size_t k = 0; k < DIRECTIONS; k++) {
         // Compute destination point
-        ssize_t ii = (i + direction_matrix[k][0]);
-        ssize_t jj = (j + direction_matrix[k][1]);
+        const size_t ii = i + direction_matrix[k][0];
+        const size_t jj = j + direction_matrix[k][1];
         // Propagate to neighboor nodes
         if ((ii >= 0 && ii < mesh_out->width) && (jj >= 0 && jj < mesh_out->height)) {
           Mesh_get_cell(mesh_out, ii, jj, k) = Mesh_get_cell_const(mesh_in, i, j, k);
