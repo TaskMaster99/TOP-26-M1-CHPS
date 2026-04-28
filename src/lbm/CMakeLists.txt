@@ -19,7 +19,7 @@ target_sources(
   PRIVATE config.cpp structures.cpp communications.cpp initialization.cpp physics.cpp
 )
 
-target_compile_options(top.lbm-lib PRIVATE -g3 -O3)
+target_compile_options(top.lbm-lib PRIVATE -g3 -O3 -Wall -Wextra -Wpedantic -march=native)
 
 target_link_libraries(top.lbm-lib PRIVATE MPI::MPI_CXX OpenMP::OpenMP_CXX)
 set_target_properties(top.lbm-lib PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
