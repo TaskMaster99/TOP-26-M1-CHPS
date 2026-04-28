@@ -133,8 +133,8 @@ int main(int argc, char* argv[]) {
     // MPI_Barrier(MPI_COMM_WORLD);
 
     // Propagate values from node to neighboors
-    // lbm_comm_halo_exchange(&mesh_comm, &temp);
-    lbm_comm_halo_exchange_non_block(&mesh_comm, &temp);
+    lbm_comm_halo_exchange(&mesh_comm, &temp);
+    //lbm_comm_halo_exchange_non_block(&mesh_comm, &temp);
 
     propagation(&mesh, &temp);
     // Need to wait all before doing next step

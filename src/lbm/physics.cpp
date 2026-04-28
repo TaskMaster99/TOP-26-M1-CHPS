@@ -198,8 +198,9 @@ void collision(Mesh* mesh_out, const Mesh* mesh_in) {
   assert(mesh_in->height == mesh_out->height);
 
 // Loop on all inner cells
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(static)
   for (size_t j = 1; j < mesh_in->height - 1; j++) {
+    #pragma omp simd
     for (size_t i = 1; i < mesh_in->width - 1; i++) {
       compute_cell_collision(mesh_out, mesh_in, i, j);
     }
@@ -208,8 +209,9 @@ void collision(Mesh* mesh_out, const Mesh* mesh_in) {
 
 void propagation(Mesh* mesh_out, const Mesh* mesh_in) {
 // Loop on all cells
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(static)
   for (size_t j = 1; j < mesh_out->height - 1; j++) {
+    #pragma omp simd
     for (size_t i = 1; i < mesh_out->width - 1; i++) {
       // For all direction
       for (size_t k = 0; k < DIRECTIONS; k++) {

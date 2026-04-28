@@ -355,6 +355,7 @@ void lbm_comm_halo_exchange(lbm_comm_t* mesh, Mesh* mesh_to_process) {
   // Synchronize all remaining in-flight communications before exiting
   //MPI_Syncall(MPI_COMM_WORLD);
 }
+#if 0
 
 /// @brief Start of the horizontal non blocking asynchronous communications.
 /// @param mesh_comm Mesh communicator to use.
@@ -601,6 +602,8 @@ void lbm_comm_halo_exchange_non_block(lbm_comm_t* mesh, Mesh* mesh_to_process) {
 
   MPI_Waitall(16, req, MPI_STATUS_IGNORE);
 }
+
+#endif
 
 void save_frame_all_domain(FILE* fp, Mesh* source_mesh, Mesh* temp) {
   int comm_size, rank;
