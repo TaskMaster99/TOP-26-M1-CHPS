@@ -79,6 +79,9 @@ void lbm_comm_print(const lbm_comm_t* mesh_comm);
 /// @brief Performance halo exchange of ghost cells.
 void lbm_comm_halo_exchange(lbm_comm_t* mesh, Mesh* mesh_to_process);
 
+/// @brief Performance halo exchange of ghost cells with non blocking comm.
+void lbm_comm_halo_exchange_non_block(lbm_comm_t* mesh, Mesh* mesh_to_process);
+
 /// @brief Mesh rendering by doing reduction on rank 0 (master).
 /// @param mesh_comm Communication mesh to use.
 /// @param temp Temporary mesh to store the segments.
