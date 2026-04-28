@@ -90,7 +90,7 @@ double compute_equilibrium_profile(Vector velocity, double density, int directio
 static inline double compute_equilibrium_profile_opt(Vector velocity, double density, int direction, double v2) {
   const double p  = get_vect_norm_2(direction_matrix[direction], velocity);
   const double p2 = p * p;
-  double f_eq = 1.0 + (3.0 * p) + ((9.0 / 2.0) * p2) - ((3.0 / 2.0) * v2);
+  double f_eq     = 1.0 + (3.0 * p) + ((9.0 / 2.0) * p2) - ((3.0 / 2.0) * v2);
   f_eq *= equil_weight[direction] * density;
   return f_eq;
 }
@@ -108,7 +108,8 @@ void compute_cell_collision(Mesh* mesh_out, const Mesh* mesh_in, int x, int y) {
     // call avec v2
     double f_eq = compute_equilibrium_profile_opt(v, density, k, v2);
     // Compute f_out
-    Mesh_get_cell(mesh_out, x, y, k) = Mesh_get_cell_const(mesh_in, x, y, k) - RELAX_PARAMETER * (Mesh_get_cell_const(mesh_in, x, y, k) - f_eq);
+    Mesh_get_cell(mesh_out, x, y, k)
+      = Mesh_get_cell_const(mesh_in, x, y, k) - RELAX_PARAMETER * (Mesh_get_cell_const(mesh_in, x, y, k) - f_eq);
   }
 }
 
@@ -139,14 +140,23 @@ void compute_inflow_zou_he_poiseuille_distr(const Mesh* mesh_in, Mesh* mesh_out,
   const double v = helper_compute_poiseuille(id_y, mesh_in->height);
 
   // Compute rho from U and inner flow on surface
-  const double rho = (Mesh_get_cell_const(mesh_in, x, y, 0) + Mesh_get_cell_const(mesh_in, x, y, 2) + Mesh_get_cell_const(mesh_in, x, y, 4) + 2 * (Mesh_get_cell_const(mesh_in, x, y, 3) + Mesh_get_cell_const(mesh_in, x, y, 6) + Mesh_get_cell_const(mesh_in, x, y, 7))) / (1.0 - v);
+  const double rho
+    = (Mesh_get_cell_const(mesh_in, x, y, 0) + Mesh_get_cell_const(mesh_in, x, y, 2)
+       + Mesh_get_cell_const(mesh_in, x, y, 4)
+       + 2 * (Mesh_get_cell_const(mesh_in, x, y, 3) + Mesh_get_cell_const(mesh_in, x, y, 6) + Mesh_get_cell_const(mesh_in, x, y, 7)))
+      / (1.0 - v);
 
   // Now compute unknown microscopic values
-  Mesh_get_cell(mesh_out, x, y, 1) = Mesh_get_cell_const(mesh_in, x, y, 3); // + (2.0/3.0) * density * v_y <--- no velocity on Y so v_y = 0
-  Mesh_get_cell(mesh_out, x, y, 5) = Mesh_get_cell_const(mesh_in, x, y, 7) - (1.0 / 2.0) * (Mesh_get_cell_const(mesh_in, x, y, 2) - Mesh_get_cell_const(mesh_in, x, y, 4))
-            + (1.0 / 6.0) * (rho * v); // + (1.0/2.0) * rho * v_y    <--- no velocity on Y so v_y = 0
-  Mesh_get_cell(mesh_out, x, y, 8) = Mesh_get_cell_const(mesh_in, x, y, 6) + (1.0 / 2.0) * (Mesh_get_cell_const(mesh_in, x, y, 2) - Mesh_get_cell_const(mesh_in, x, y, 4))
-            + (1.0 / 6.0) * (rho * v); //- (1.0/2.0) * rho * v_y    <--- no velocity on Y so v_y = 0
+  Mesh_get_cell(mesh_out, x, y, 1)
+    = Mesh_get_cell_const(mesh_in, x, y, 3); // + (2.0/3.0) * density * v_y <--- no velocity on Y so v_y = 0
+  Mesh_get_cell(mesh_out, x, y, 5)
+    = Mesh_get_cell_const(mesh_in, x, y, 7)
+      - (1.0 / 2.0) * (Mesh_get_cell_const(mesh_in, x, y, 2) - Mesh_get_cell_const(mesh_in, x, y, 4))
+      + (1.0 / 6.0) * (rho * v); // + (1.0/2.0) * rho * v_y    <--- no velocity on Y so v_y = 0
+  Mesh_get_cell(mesh_out, x, y, 8)
+    = Mesh_get_cell_const(mesh_in, x, y, 6)
+      + (1.0 / 2.0) * (Mesh_get_cell_const(mesh_in, x, y, 2) - Mesh_get_cell_const(mesh_in, x, y, 4))
+      + (1.0 / 6.0) * (rho * v); //- (1.0/2.0) * rho * v_y    <--- no velocity on Y so v_y = 0
 
   // No need to copy already known one as the value will be "loss" in the wall at propagatation time
 }
@@ -158,18 +168,21 @@ void compute_outflow_zou_he_const_density(Mesh* mesh, int x, int y) {
 
   const double rho = 1.0;
   // Compute macroscopic velocity depending on inner flow going onto the wall
-  const double v = -1.0 + (1.0 / rho) * (Mesh_get_cell(mesh, x, y, 0) + Mesh_get_cell(mesh, x, y, 2) + Mesh_get_cell(mesh, x, y, 4) + 2 * (Mesh_get_cell(mesh, x, y, 1) + Mesh_get_cell(mesh, x, y, 5) + Mesh_get_cell(mesh, x, y, 8)));
+  const double v
+    = -1.0
+      + (1.0 / rho)
+          * (Mesh_get_cell(mesh, x, y, 0) + Mesh_get_cell(mesh, x, y, 2) + Mesh_get_cell(mesh, x, y, 4) + 2 * (Mesh_get_cell(mesh, x, y, 1) + Mesh_get_cell(mesh, x, y, 5) + Mesh_get_cell(mesh, x, y, 8)));
 
   // Now can compute unknown microscopic values
   Mesh_get_cell(mesh, x, y, 3) = Mesh_get_cell(mesh, x, y, 1) - (2.0 / 3.0) * rho * v;
   Mesh_get_cell(mesh, x, y, 7) = Mesh_get_cell(mesh, x, y, 5)
-            + (1.0 / 2.0) * (Mesh_get_cell(mesh, x, y, 2) - Mesh_get_cell(mesh, x, y, 4))
-            // - (1.0/2.0) * (rho * v_y)    <--- no velocity on Y so v_y = 0
-            - (1.0 / 6.0) * (rho * v);
+                                 + (1.0 / 2.0) * (Mesh_get_cell(mesh, x, y, 2) - Mesh_get_cell(mesh, x, y, 4))
+                                 // - (1.0/2.0) * (rho * v_y)    <--- no velocity on Y so v_y = 0
+                                 - (1.0 / 6.0) * (rho * v);
   Mesh_get_cell(mesh, x, y, 6) = Mesh_get_cell(mesh, x, y, 8)
-            + (1.0 / 2.0) * (Mesh_get_cell(mesh, x, y, 4) - Mesh_get_cell(mesh, x, y, 2))
-            // + (1.0/2.0) * (rho * v_y)    <--- no velocity on Y so v_y = 0
-            - (1.0 / 6.0) * (rho * v);
+                                 + (1.0 / 2.0) * (Mesh_get_cell(mesh, x, y, 4) - Mesh_get_cell(mesh, x, y, 2))
+                                 // + (1.0/2.0) * (rho * v_y)    <--- no velocity on Y so v_y = 0
+                                 - (1.0 / 6.0) * (rho * v);
 }
 
 void special_cells(Mesh* mesh, lbm_mesh_type_t* mesh_type, const lbm_comm_t* mesh_comm) {
@@ -200,7 +213,6 @@ void collision(Mesh* mesh_out, const Mesh* mesh_in) {
 // Loop on all inner cells
 #pragma omp parallel for schedule(static)
   for (size_t j = 1; j < mesh_in->height - 1; j++) {
-    #pragma omp simd
     for (size_t i = 1; i < mesh_in->width - 1; i++) {
       compute_cell_collision(mesh_out, mesh_in, i, j);
     }
@@ -211,7 +223,6 @@ void propagation(Mesh* mesh_out, const Mesh* mesh_in) {
 // Loop on all cells
 #pragma omp parallel for schedule(static)
   for (size_t j = 1; j < mesh_out->height - 1; j++) {
-    #pragma omp simd
     for (size_t i = 1; i < mesh_out->width - 1; i++) {
       // For all direction
       for (size_t k = 0; k < DIRECTIONS; k++) {

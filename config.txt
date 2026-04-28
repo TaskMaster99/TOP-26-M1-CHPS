@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-iterations           = 1000
-=======
-iterations           = 200
->>>>>>> 7d421e3 (MPI impl who doesn't pass checksum test)
+iterations           = 20000
 width                = 800
 height               = 160
 obstacle_x           = 100.0

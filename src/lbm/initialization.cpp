@@ -10,7 +10,8 @@
 void init_cond_velocity_0_density_1(Mesh* mesh) {
   assert(mesh != NULL);
 
-  // Loop on all cells
+// Loop on all cells
+#pragma omp parallel for schedule(static)
   for (size_t i = 0; i < mesh->width; i++) {
     for (size_t j = 0; j < mesh->height; j++) {
       for (size_t k = 0; k < DIRECTIONS; k++) {
@@ -22,7 +23,8 @@ void init_cond_velocity_0_density_1(Mesh* mesh) {
 }
 
 void setup_init_state_circle_obstacle(Mesh* mesh, lbm_mesh_type_t* mesh_type, const lbm_comm_t* mesh_comm) {
-  // Loop on nodes
+// Loop on nodes
+#pragma omp parallel for schedule(static)
   for (size_t j = mesh_comm->y; j < mesh->height + mesh_comm->y; j++) {
     for (size_t i = mesh_comm->x; i < mesh->width + mesh_comm->x; i++) {
       if (((i - OBSTACLE_X) * (i - OBSTACLE_X)) + ((j - OBSTACLE_Y) * (j - OBSTACLE_Y)) <= OBSTACLE_R * OBSTACLE_R) {
@@ -42,21 +44,22 @@ void setup_init_state_global_poiseuille_profile(Mesh* mesh, lbm_mesh_type_t* mes
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  // Apply Poiseuille distribution for all nodes except on top/bottom border
+// Apply Poiseuille distribution for all nodes except on top/bottom border
+#pragma omp parallel for schedule(static)
   for (size_t i = 0; i < mesh->width; i++) {
     for (size_t j = 0; j < mesh->height; j++) {
       for (size_t k = 0; k < DIRECTIONS; k++) {
         // compute equilibrium
         v[0] = helper_compute_poiseuille(j + mesh_comm->y, MESH_HEIGHT);
-        
+
         // disparition de la variable locale lbm_mesh_cell_t cell
         Mesh_get_cell(mesh, i, j, k) = compute_equilibrium_profile(v, rho, k);
-        
+
         // Mark as standard fluid (seulement à k=0 pour éviter de le faire 9 fois)
         if (k == 0) {
-            *(lbm_cell_type_t_get_cell(mesh_type, i, j)) = CELL_FUILD;
+          *(lbm_cell_type_t_get_cell(mesh_type, i, j)) = CELL_FUILD;
         }
-        
+
         // This is a try to init the fluid with a null speed except on the left border.
         if (i > 1) {
           Mesh_get_cell(mesh, i, j, k) = equil_weight[k];
@@ -72,6 +75,7 @@ void setup_init_state_border(Mesh* mesh, lbm_mesh_type_t* mesh_type, const lbm_c
 
   // Setup left border type
   if (mesh_comm->left_id == -1) {
+#pragma omp parallel for schedule(static)
     for (size_t j = 1; j < mesh->height - 1; j++) {
       *(lbm_cell_type_t_get_cell(mesh_type, 0, j)) = CELL_LEFT_IN;
     }
@@ -79,6 +83,7 @@ void setup_init_state_border(Mesh* mesh, lbm_mesh_type_t* mesh_type, const lbm_c
 
   // Setup right border type
   if (mesh_comm->right_id == -1) {
+#pragma omp parallel for schedule(static)
     for (size_t j = 1; j < mesh->height - 1; j++) {
       *(lbm_cell_type_t_get_cell(mesh_type, mesh->width - 1, j)) = CELL_RIGHT_OUT;
     }
@@ -86,6 +91,7 @@ void setup_init_state_border(Mesh* mesh, lbm_mesh_type_t* mesh_type, const lbm_c
 
   // Setup top border type
   if (mesh_comm->top_id == -1) {
+#pragma omp parallel for schedule(static)
     for (size_t i = 0; i < mesh->width; i++) {
       for (size_t k = 0; k < DIRECTIONS; k++) {
         Mesh_get_cell(mesh, i, 0, k) = compute_equilibrium_profile(v, rho, k);
@@ -96,6 +102,7 @@ void setup_init_state_border(Mesh* mesh, lbm_mesh_type_t* mesh_type, const lbm_c
 
   // Setup bottom border type
   if (mesh_comm->bottom_id == -1) {
+#pragma omp parallel for schedule(static)
     for (size_t i = 0; i < mesh->width; i++) {
       for (size_t k = 0; k < DIRECTIONS; k++) {
         Mesh_get_cell(mesh, i, mesh->height - 1, k) = compute_equilibrium_profile(v, rho, k);
