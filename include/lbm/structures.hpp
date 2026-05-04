@@ -99,16 +99,16 @@ void fatal(const char* message);
 
 /// @brief Retrieves a cell of a mesh given its coordinates.
 static inline lbm_mesh_cell_t Mesh_get_cell(const Mesh* mesh, int x, int y) {
-  return &mesh->cells[(x * mesh->height + y) * DIRECTIONS];
+  return &mesh->cells[(y * mesh->width + x) * DIRECTIONS];
 }
 
 /// @brief Retrieves a column of a mesh given the `x` coordinate.
-static inline lbm_mesh_cell_t Mesh_get_col(const Mesh* mesh, int x) {
+static inline lbm_mesh_cell_t Mesh_get_col(const Mesh* mesh, int y) {
   // `+ DIRECTIONS` to skip the first (phantom) line
-  return &mesh->cells[x * mesh->height * DIRECTIONS + DIRECTIONS];
+  return &mesh->cells[y * mesh->width * DIRECTIONS + DIRECTIONS];
 }
 
 /// @brief Retrieves a pointer on the cell type of a mesh given its coordinates.
 static inline lbm_cell_type_t* lbm_cell_type_t_get_cell(const lbm_mesh_type_t* meshtype, uint32_t x, uint32_t y) {
-  return &meshtype->types[x * meshtype->height + y];
+  return &meshtype->types[y * meshtype->width + x];
 }

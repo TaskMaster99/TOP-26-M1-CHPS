@@ -253,15 +253,15 @@ lbm_comm_sync_ghosts_vertical(Mesh* mesh_to_process, lbm_comm_type_t comm_type, 
   MPI_Status status;
   switch (comm_type) {
   case COMM_SEND:
-    for (size_t x = 1; x < mesh_to_process->width - 2; x++) {
-        MPI_Send(&Mesh_get_cell(mesh_to_process, x, y)[0], DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
+     {
+        MPI_Send(&Mesh_get_cell(mesh_to_process, 1, y)[0], DIRECTIONS * mesh_to_process->width - 3, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
     }
     break;
   case COMM_RECV:
-    for (size_t x = 1; x < mesh_to_process->width - 2; x++) {
+     {
         MPI_Recv(
-          &Mesh_get_cell(mesh_to_process, x, y)[0],
-          DIRECTIONS,
+          &Mesh_get_cell(mesh_to_process, 1, y)[0],
+          DIRECTIONS * mesh_to_process->width - 3,
           MPI_DOUBLE,
           target_rank,
           0,
