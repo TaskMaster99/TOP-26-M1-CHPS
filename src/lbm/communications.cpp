@@ -195,14 +195,10 @@ static void lbm_comm_sync_ghosts_horizontal(
   MPI_Status status;
   switch (comm_type) {
   case COMM_SEND:
-    for (size_t y = 0; y < mesh->height - 2; y++) {
-      MPI_Send(&Mesh_get_col(mesh_to_process, x)[y], DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
-    }
+      MPI_Send(&Mesh_get_col(mesh_to_process, x)[0], DIRECTIONS * (mesh->height - 2), MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
     break;
   case COMM_RECV:
-    for (size_t y = 0; y < mesh->height - 2; y++) {
-      MPI_Recv(&Mesh_get_col(mesh_to_process, x)[y], DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD, &status);
-    }
+      MPI_Recv(&Mesh_get_col(mesh_to_process, x)[0], DIRECTIONS * (mesh->height - 2), MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD, &status);
     break;
   default:
     fatal("unknown type of communication");
@@ -256,24 +252,21 @@ lbm_comm_sync_ghosts_vertical(Mesh* mesh_to_process, lbm_comm_type_t comm_type, 
   switch (comm_type) {
   case COMM_SEND:
     for (size_t x = 1; x < mesh_to_process->width - 2; x++) {
-      for (size_t k = 0; k < DIRECTIONS; k++) {
-        MPI_Send(&Mesh_get_cell(mesh_to_process, x, y)[k], 1, MPI_DOUBLE, target_rank, k, MPI_COMM_WORLD);
-      }
+        MPI_Send(&Mesh_get_cell(mesh_to_process, x, y)[0], DIRECTIONS, MPI_DOUBLE, target_rank, 0, MPI_COMM_WORLD);
+      
     }
     break;
   case COMM_RECV:
     for (size_t x = 1; x < mesh_to_process->width - 2; x++) {
-      for (size_t k = 0; k < DIRECTIONS; k++) {
         MPI_Recv(
-          &Mesh_get_cell(mesh_to_process, x, y)[k],
+          &Mesh_get_cell(mesh_to_process, x, y)[0],
           DIRECTIONS,
           MPI_DOUBLE,
           target_rank,
-          k,
+          0,
           MPI_COMM_WORLD,
           &status
         );
-      }
     }
     break;
   default:
@@ -356,7 +349,7 @@ void lbm_comm_halo_exchange(lbm_comm_t* mesh, Mesh* mesh_to_process) {
   lbm_comm_sync_ghosts_horizontal(mesh, mesh_to_process, COMM_RECV, mesh->right_id, mesh->width - 1);
 
   // Synchronize all remaining in-flight communications before exiting
-  MPI_Syncall(MPI_COMM_WORLD);
+  //MPI_Syncall(MPI_COMM_WORLD);
 }
 
 void save_frame_all_domain(FILE* fp, Mesh* source_mesh, Mesh* temp) {
